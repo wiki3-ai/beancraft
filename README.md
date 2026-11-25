@@ -41,6 +41,9 @@ Not yet included (see [Roadmap](#roadmap)):
 4. Review the diff in the Inbox, then click **Approve**, **Edit** or **Reject**.
 5. Click **Save** (or **Download**) to write the approved entries.
 
+If the AI needs more information, answer its question to continue the same entry.
+The original input and any answers remain on the page for retry or discard; they are not saved across reloads.
+
 ### AI providers
 
 Click the **AI:** button in the header to choose a provider.
@@ -100,6 +103,14 @@ npx wrangler deploy    # uses wrangler.jsonc; custom domain beancraft.io
 
 Response headers, including the CSP, come from `public/_headers`.
 R2 is reserved for desktop release downloads in a later milestone.
+
+The **Deploy to Cloudflare** GitHub Actions workflow deploys the current `main` commit
+after its push CI succeeds. Older CI runs are skipped if `main` has moved on. It can
+also be run manually from `main` in the Actions tab (this bypasses the CI-success gate).
+Configure the repository variable `CLOUDFLARE_ACCOUNT_ID` and secret
+`CLOUDFLARE_API_TOKEN` first. The token must have permission to deploy the `beancraft`
+Worker and manage its configured custom domain. The workflow builds the static site
+and deploys it using `wrangler.jsonc`; it does not deploy pull requests.
 
 ## Findings from the proof of concept
 

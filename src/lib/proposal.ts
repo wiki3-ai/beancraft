@@ -24,6 +24,10 @@ export interface ProposedTransaction {
 export const PROPOSAL_SCHEMA = {
   type: 'object',
   properties: {
+    question: {
+      type: ['string', 'null'],
+      description: 'A question for missing information, or null when proposing transactions',
+    },
     transactions: {
       type: 'array',
       items: {
@@ -54,7 +58,7 @@ export const PROPOSAL_SCHEMA = {
       },
     },
   },
-  required: ['transactions'],
+  required: ['question', 'transactions'],
   additionalProperties: false,
 } as const;
 

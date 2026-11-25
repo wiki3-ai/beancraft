@@ -28,6 +28,7 @@
   let engineError = $state('');
   let ledger = $state<Ledger | null>(null);
   let items = $state<InboxItem[]>([]);
+  let pending = $state<{ input: IngestInput; preview?: string; question: string } | null>(null);
   let settings = $state<AiSettings>(loadSettings());
   let showSettings = $state(false);
   let caps = $state<AiCapabilities | null>(null);
@@ -58,7 +59,7 @@
   });
 
   $effect(() => {
-    if (!ledger?.dirty) return;
+    if (!ledger?.dirty && !pending && pendingCount === 0) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
     addEventListener('beforeunload', warn);
     return () => removeEventListener('beforeunload', warn);
@@ -67,9 +68,12 @@
   const errorText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
   function openLedger(opened: OpenedLedger) {
-    if ((ledger?.dirty || pendingCount > 0) && !confirm('Discard unsaved changes and pending proposals?')) return;
+    if (busy || recording) return;
+    if ((ledger?.dirty || pendingCount > 0 || pending) && !confirm('Discard unsaved changes and pending input or proposals?')) return;
+    if (pending?.preview) URL.revokeObjectURL(pending.preview);
     ledger = { ...opened, dirty: false };
     items = [];
+    pending = null;
     message = null;
   }
 
@@ -91,6 +95,7 @@
 
   async function ingest(input: IngestInput, preview?: string) {
     if (!ledger || !ctx) return;
+    pending = { input, preview, question: '' };
     const p = provider;
     if (typeof p === 'string') {
       message = { kind: 'error', text: p };
@@ -100,12 +105,17 @@
     message = null;
     busy = p.remote ? `Asking ${p.label}…` : 'Thinking on-device…';
     try {
-      const txs = await propose(p, ctx, input, {
+      const result = await propose(p, ctx, input, {
         onDownloadProgress: (f) => (busy = `Downloading the on-device model… ${Math.round(f * 100)}%`),
       });
-      items = [...txs.map((t) => toInboxItem(t, input.source, preview)), ...items];
+      if (result.kind === 'question') {
+        pending = { input, preview, question: result.question };
+      } else {
+        items = [...result.transactions.map((t) => toInboxItem(t, input.source, preview)), ...items];
+        pending = null;
+      }
     } catch (e) {
-      message = { kind: 'error', text: `Could not create a proposal: ${errorText(e)}` };
+      message = { kind: 'error', text: `Could not reach the AI or process its response: ${errorText(e)}. Your input is kept below; you can retry.` };
     } finally {
       busy = '';
     }
@@ -113,12 +123,23 @@
 
   async function sendChat() {
     const text = chat.trim();
-    if (!text) return;
+    if (!text || busy || recording) return;
     chat = '';
-    await ingest({ source: 'chat', text });
+    if (pending) {
+      await ingest({
+        ...pending.input,
+        answers: [...(pending.input.answers ?? []), { question: pending.question || 'Additional details', answer: text }],
+      }, pending.preview);
+    } else {
+      await ingest({ source: 'chat', text });
+    }
   }
 
   async function ingestImage(file: File) {
+    if (pending || busy || recording) {
+      message = { kind: 'info', text: 'Finish or discard the current input before adding a receipt.' };
+      return;
+    }
     if (caps && !caps.image) {
       message = { kind: 'error', text: 'The selected AI provider cannot read images. Choose another in Settings.' };
       return;
@@ -135,6 +156,7 @@
       await r.stop();
       return;
     }
+    if (pending || busy) return;
     message = null;
     try {
       if (caps?.audio) {
@@ -171,6 +193,12 @@
       recording = null;
       message = { kind: 'error', text: `Microphone unavailable: ${errorText(e)}` };
     }
+  }
+
+  function discardPending() {
+    if (pending?.preview) URL.revokeObjectURL(pending.preview);
+    pending = null;
+    message = null;
   }
 
   function onApprove(item: InboxItem) {
@@ -288,7 +316,7 @@
       {/if}
       <p>
         <button onclick={save} disabled={!ledger.dirty} data-testid="save">{ledger.handle ? 'Save' : 'Download'}</button>
-        <button class="muted" onclick={chooseLedger}>Open another…</button>
+        <button class="muted" onclick={chooseLedger} disabled={!!busy || !!recording}>Open another…</button>
       </p>
       {#if ledger.dirty}<p class="hint" data-testid="unsaved">Unsaved approved changes</p>{/if}
       <details>
@@ -299,19 +327,36 @@
 
     <main>
       <section class="capture">
+        {#if pending}
+          <div data-testid="pending-input">
+            <p><strong>Current input</strong></p>
+            {#if pending.input.text}<p>{pending.input.text}</p>{/if}
+            {#if pending.preview}<img src={pending.preview} alt="Pending receipt" width="160" />{/if}
+            {#if pending.input.audio}
+              <p>Voice recording retained for this entry.</p>
+            {/if}
+            {#each pending.input.answers ?? [] as turn}
+              <p>{turn.question}</p>
+              <p>{turn.answer}</p>
+            {/each}
+            {#if pending.question}<p role="status">{pending.question}</p>{/if}
+            <button class="muted" onclick={() => pending && ingest(pending.input, pending.preview)} disabled={!!busy}>Retry</button>
+            <button class="muted" onclick={discardPending} disabled={!!busy}>Discard input</button>
+          </div>
+        {/if}
         <textarea
           bind:value={chat}
           rows="3"
-          placeholder={'Describe a purchase or sale, e.g. "Paid $42.10 at Blick for brushes yesterday with the credit card". Or drop a receipt image anywhere.'}
+          placeholder={pending ? 'Add details to answer the question' : 'Describe a purchase or sale, e.g. "Paid $42.10 at Blick for brushes yesterday with the credit card". Or drop a receipt image anywhere.'}
           aria-label="Describe a transaction"
           onkeydown={(e) => e.key === 'Enter' && (e.metaKey || e.ctrlKey) && sendChat()}
         ></textarea>
         <div class="actions">
-          <button onclick={sendChat} disabled={!!busy || !chat.trim()}>Propose entry</button>
-          <button class="muted" onclick={toggleVoice} disabled={!!busy && !recording} aria-pressed={!!recording}>
+          <button onclick={sendChat} disabled={!!busy || !!recording || !chat.trim()}>{pending ? 'Send details' : 'Propose entry'}</button>
+          <button class="muted" onclick={toggleVoice} disabled={!!pending || (!!busy && !recording)} aria-pressed={!!recording}>
             {recording ? '■ Stop recording' : '🎤 Voice'}
           </button>
-          <button class="muted" onclick={() => imageInput?.click()} disabled={!!busy}>🧾 Receipt image</button>
+          <button class="muted" onclick={() => imageInput?.click()} disabled={!!pending || !!busy || !!recording}>🧾 Receipt image</button>
         </div>
         {#if busy}<p class="hint" role="status">{busy}</p>{/if}
         {#if message}<p class={message.kind} role="alert">{message.text}</p>{/if}
