@@ -18,10 +18,25 @@
   const remote = $derived(draft.provider === 'openai' && !isLocalUrl(draft.openai.baseUrl));
   const remoteHost = $derived(URL.canParse(draft.openai.baseUrl) ? new URL(draft.openai.baseUrl).host : 'this provider');
 
+  const originOf = (url: string) => (URL.canParse(url) ? new URL(url).origin : url);
+  // An API key belongs to the endpoint it was entered for; never send it to another origin.
+  let keyOrigin = originOf(draft.openai.baseUrl);
+
+  function setBaseUrl(url: string) {
+    if (originOf(url) !== keyOrigin) {
+      draft.openai.apiKey = '';
+      keyOrigin = originOf(url);
+    }
+    draft.openai.baseUrl = url;
+  }
+
   function choosePreset(id: string) {
     const p = PRESETS.find((x) => x.id === id);
     draft.preset = id;
-    if (p) draft.openai = { ...draft.openai, baseUrl: p.baseUrl, model: p.model };
+    if (p) {
+      draft.openai = { baseUrl: p.baseUrl, model: p.model, apiKey: '' };
+      keyOrigin = originOf(p.baseUrl);
+    }
   }
 </script>
 
@@ -46,7 +61,7 @@
             {#each PRESETS as p (p.id)}<option value={p.id}>{p.label}</option>{/each}
           </select>
         </label>
-        <label>Base URL <input bind:value={draft.openai.baseUrl} spellcheck="false" /></label>
+        <label>Base URL <input value={draft.openai.baseUrl} oninput={(e) => setBaseUrl(e.currentTarget.value)} spellcheck="false" /></label>
         <label>Model <input bind:value={draft.openai.model} spellcheck="false" /></label>
         <label>
           API key{preset?.needsKey ? '' : ' (optional)'}

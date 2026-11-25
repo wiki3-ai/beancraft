@@ -5,7 +5,7 @@
   import Settings from './components/Settings.svelte';
   import { loadSettings, providerFor, saveSettings, type AiSettings } from './lib/ai/settings';
   import type { AiCapabilities } from './lib/ai/types';
-  import { dictate, Recorder, speechRecognitionAvailable } from './lib/audio';
+  import { dictate, onDeviceDictationReady, Recorder } from './lib/audio';
   import { initEngine, ledgerContext, validate } from './lib/engine';
   import {
     download,
@@ -148,7 +148,7 @@
             await ingest({ source: 'voice', text: notes, audio });
           },
         };
-      } else if (speechRecognitionAvailable()) {
+      } else if (await onDeviceDictationReady()) {
         const d = dictate();
         recording = { stop: async () => d.stop() };
         d.result.then(
@@ -162,7 +162,10 @@
           },
         );
       } else {
-        message = { kind: 'error', text: 'Voice input is not available with this browser and AI provider.' };
+        message = {
+          kind: 'error',
+          text: 'Voice input needs an AI provider with audio input or on-device speech recognition, which this browser does not offer. Type instead, or choose another provider.',
+        };
       }
     } catch (e) {
       recording = null;
