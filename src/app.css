@@ -1,0 +1,66 @@
+@import './styles/rustfava-theme.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  font-size: 15px;
+  color: var(--text-color);
+  background: var(--background);
+}
+
+button {
+  font: inherit;
+  color: var(--button-color);
+  cursor: pointer;
+  background: var(--button-background);
+  border: 0;
+  border-radius: 3px;
+  padding: 0.35em 0.8em;
+}
+
+button.muted {
+  color: var(--button-muted-color);
+  background: var(--button-muted-background);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text-color);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.35em 0.5em;
+}
+
+textarea,
+pre,
+code {
+  font-family: var(--font-family-monospaced);
+  font-size: 13px;
+}
+
+a {
+  color: var(--link-color);
+}
+
+.error {
+  color: var(--error);
+}
+
+.hint {
+  color: var(--text-color-lightest);
+  font-size: 0.9em;
+}

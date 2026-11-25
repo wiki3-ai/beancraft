@@ -1,0 +1,12 @@
+# Cloudflare Workers static-assets headers.
+# connect-src allows https: and localhost so users can choose any AI provider
+# (OpenRouter, a local Ollama/LM Studio, ...); nothing is contacted unless configured.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; media-src 'self' blob:; connect-src 'self' https: http://localhost:* http://127.0.0.1:*; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
+  Permissions-Policy: microphone=(self), camera=(), geolocation=()
+  Referrer-Policy: no-referrer
+  X-Content-Type-Options: nosniff
+  Cross-Origin-Opener-Policy: same-origin
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

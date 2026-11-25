@@ -1,0 +1,12 @@
+// Cloudflare Workers static assets (no Worker script, no backend).
+// Deploy: npm run build && npx wrangler deploy
+{
+  "name": "beancraft",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [{ "pattern": "beancraft.io", "custom_domain": true }],
+  "observability": { "enabled": false }
+}

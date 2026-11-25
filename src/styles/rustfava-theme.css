@@ -1,0 +1,47 @@
+/*
+ * Theme variables adapted from rustfava's frontend/css/style.css
+ * (https://github.com/rustledger/rustfava), itself derived from Fava.
+ * Copyright (c) 2015-2016 Dominik Aumayr. MIT License; see THIRD_PARTY_NOTICES.md.
+ */
+:root {
+  --font-family: "Fira Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-family-monospaced: "Fira Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  color-scheme: light dark;
+
+  --error: hsl(0deg 100% 30%);
+  --warning: hsl(52deg 84% 56%);
+  --green: hsl(151deg 100% 25%);
+
+  --background: light-dark(hsl(0deg 0% 100%), hsl(0deg 0% 15%));
+  --background-darker: light-dark(hsl(0deg 0% 95%), hsl(0deg 0% 20%));
+  --background-darkest: light-dark(hsl(0deg 0% 90%), hsl(0deg 0% 25%));
+  --background-button: light-dark(hsl(0deg 0% 80%), hsl(0deg 0% 35%));
+
+  --border-lighter: light-dark(hsl(0deg 0% 90%), hsl(0deg 0% 25%));
+  --border: light-dark(hsl(0deg 0% 85%), hsl(0deg 0% 30%));
+  --border-darker: light-dark(hsl(0deg 0% 80%), hsl(0deg 0% 35%));
+
+  --text-color: light-dark(hsl(0deg 0% 25%), hsl(0deg 0% 80%));
+  --text-color-lighter: light-dark(hsl(0deg 0% 30%), hsl(0deg 0% 75%));
+  --text-color-lightest: light-dark(hsl(0deg 0% 40%), hsl(0deg 0% 65%));
+  --link-color: light-dark(hsl(203deg 100% 32%), hsl(203deg 100% 68%));
+
+  --button-color: hsl(0deg 0% 100%);
+  --button-background: hsl(203deg 100% 32%);
+  --button-muted-color: var(--text-color);
+  --button-muted-background: var(--background-button);
+
+  --sidebar-background: var(--background-darker);
+  --sidebar-border: var(--border-lighter);
+
+  --header-color: hsl(0deg 0% 100%);
+  --header-background: light-dark(hsl(203deg 100% 32%), hsl(203deg 100% 25%));
+
+  --diff-red: light-dark(hsl(0deg 48% 40%), hsl(0deg 48% 60%));
+  --diff-green: light-dark(hsl(125deg 48% 40%), hsl(125deg 48% 60%));
+
+  --dragover-background: hsl(203deg 100% 32% / 50%);
+  --overlay-wrapper-background: hsl(0deg 0% 50% / 50%);
+  --box-shadow-overlay: 0 0 20px var(--overlay-wrapper-background);
+}
